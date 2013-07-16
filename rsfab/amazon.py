@@ -9,14 +9,14 @@ from fabric.context_managers import settings
 from fabric.colors import red, green, blue
 
 
-def wait_for_vailable(obj):
+def wait_for_vailable(obj, success_status=u'available'):
     """
         Wait for object availability and end when obj is avilable. Obj can
         be any amazon compotent like: image, instance, db instance or others
     """
 
     state = obj.update()
-    while unicode(state) != u'available':
+    while unicode(state) != success_status:
         print(blue('Wait for %s. Current status is:%s' % (
             unicode(obj), state)))
         time.sleep(env.aws_waiting_time)
@@ -40,7 +40,7 @@ def run_instances():
                 'security_groups': ['my-secure-group'],
                 'callbacks': [func1, func2] #list of functions to run after creating the instance,
                  as parametr get boto Instance object,
-                'tags': {'key': 'value'}
+                'tags': [{'key': 'value'}]
             }
         ]
 
@@ -57,21 +57,27 @@ def run_instances():
     image = conn.get_image(env.aws_ami)
     instances = []
 
-    for run_template in env.run_templates:
+    for run_template in env.aws_run_templates:
         print(green('Starting Instance %s' % run_template['key_name']))
         reservation = image.run(
-            key_name=run_template['key_name'],
+            key_name=run_template['key_name'] % env,
             instance_type=run_template['instance_type'],
             user_data=run_template.get('user_data', None),
             security_groups=run_template['security_groups']
         )
-        instances.append((reservation.instances[0], run_template))
+        instance = reservation.instances[0]
+        instances.append((instance, run_template))
+        tags = run_template.get('tags', [])
+        for tag_key, tag_value in tags.items():
+            instance.add_tag(tag_key, tag_value % env)
 
     for (instance, run_template) in instances:
-        wait_for_vailable(instance)
+        wait_for_vailable(instance, success_status=u'running')
         callbacks = run_template.get('callbacks', [])
         if callbacks:
             for callback in callbacks:
-                with settings(host_string=instance.endpoint):
+                with settings(
+                        host_string=instance.endpoint,
+                        user=env.user):
                     callback(instance)
     return instances
