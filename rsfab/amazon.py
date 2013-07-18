@@ -29,11 +29,11 @@ def run_instances():
         and return their ids
 
         Requried parameters are:
-        env.aws_ami_id - ami id from we need to run new instance
         env.aws_run_templates - it's a list of templates to run on amazon
 
         aws_run_templates = [
             {
+                'ami': 'ami-3df234d',
                 'instance_type': 'm1.medium',
                 'key_name': 'perfect-name-for-your-instance',
                 'user_data': '''#!/bin/sh\necho export env=staging >> /etc/environment\n''',
@@ -53,12 +53,11 @@ def run_instances():
     if conn is None:
         print(red("Can't connect to ec2 region"))
         return
-
-    image = conn.get_image(env.aws_ami)
     instances = []
 
     for run_template in env.aws_run_templates:
         print(green('Starting Instance %s' % run_template['key_name']))
+        image = conn.get_image(run_template['ami'])
         reservation = image.run(
             key_name=run_template['key_name'] % env,
             instance_type=run_template['instance_type'],
