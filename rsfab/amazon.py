@@ -4,9 +4,11 @@
 import boto.ec2
 import time
 
-from fabric.api import env
+from fabric.api import env, run
+from fabric.exceptions import NetworkError
 from fabric.context_managers import settings
 from fabric.colors import red, green, blue
+from fabric.utils import abort
 
 
 def wait_for_vailable(obj, success_status=u'available'):
@@ -21,6 +23,27 @@ def wait_for_vailable(obj, success_status=u'available'):
             unicode(obj), state)))
         time.sleep(env.aws_waiting_time)
         state = obj.update()
+
+
+def wait_for_connection(ec2instance, attempts=3):
+    """
+        Try to connect with ec2
+    """
+    try:
+        with settings(
+                host_string=ec2instance.public_dns_name,
+                user=env.user):
+            run('pwd')
+    except NetworkError:
+        print(blue('Wait for connection %s:%s' %
+                   (env.user, ec2instance.public_dns_name)))
+        time.sleep(env.aws_waiting_time)
+        if attempts:
+            wait_for_connection(ec2instance, attempts - 1)
+        else:
+            print(red("Can't connect to ec2instance %s"
+                      % ec2instance.public_dns_name))
+            abort('Error')
 
 
 def run_instances():
@@ -38,6 +61,7 @@ def run_instances():
                 'key_name': 'perfect-name-for-your-instance',
                 'user_data': '''#!/bin/sh\necho export env=staging >> /etc/environment\n''',
                 'security_groups': ['my-secure-group'],
+                'placement': 'us-east1d',
                 'callbacks': [func1, func2] #list of functions to run after creating the instance,
                  as parametr get boto Instance object,
                 'tags': [{'key': 'value'}]
@@ -62,7 +86,8 @@ def run_instances():
             key_name=run_template['key_name'] % env,
             instance_type=run_template['instance_type'],
             user_data=run_template.get('user_data', None),
-            security_groups=run_template['security_groups']
+            security_groups=run_template['security_groups'],
+            placement=run_template.get('placement', None)
         )
         instance = reservation.instances[0]
         instances.append((instance, run_template))
@@ -74,9 +99,10 @@ def run_instances():
         wait_for_vailable(instance, success_status=u'running')
         callbacks = run_template.get('callbacks', [])
         if callbacks:
+            wait_for_connection(instance)
             for callback in callbacks:
                 with settings(
-                        host_string=instance.endpoint,
+                        host_string=instance.public_dns_name,
                         user=env.user):
                     callback(instance)
     return instances
