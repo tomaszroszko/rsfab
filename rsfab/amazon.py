@@ -2,6 +2,7 @@
     Helper functions to manage amazon cloud
 """
 import boto.ec2
+import boto.rds
 import time
 
 from fabric.api import env, run
@@ -44,6 +45,25 @@ def wait_for_connection(ec2instance, attempts=3):
             print(red("Can't connect to ec2instance %s"
                       % ec2instance.public_dns_name))
             abort('Error')
+
+
+def get_database():
+    """
+        get aws_db_instance_name from amazon
+    """
+    db_conn = boto.rds.connect_to_region(
+        env.aws_region,
+        aws_access_key_id=env.aws_access_key,
+        aws_secret_access_key=env.aws_secret_access_key)
+    db_instances = db_conn.get_all_dbinstances()
+    db_instance = None
+    for db in db_instances:
+        if db.DBName == env.aws_db_instance_name:
+            db_instance = db
+            break
+    if db_instance is None:
+        print(red('No DB instance to copy'))
+    return db_instance
 
 
 def run_instances():
