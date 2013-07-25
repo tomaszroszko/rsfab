@@ -58,11 +58,11 @@ def get_database():
     db_instances = db_conn.get_all_dbinstances()
     db_instance = None
     for db in db_instances:
-        if db.DBName == env.aws_db_instance_name:
+        if unicode(db.DBName) == env.aws_db_instance_name:
             db_instance = db
             break
     if db_instance is None:
-        print(red('No DB instance to copy'))
+        print(red('No DB instance found'))
     return db_instance
 
 
@@ -114,6 +114,8 @@ def run_instances():
         tags = run_template.get('tags', [])
         for tag_key, tag_value in tags.items():
             instance.add_tag(tag_key, tag_value % env)
+        # instances = [(conn.get_all_instances(instance_ids=['i-c09220a1'])[0].instances[0],
+    #              env.aws_run_templates[0])]
 
     for (instance, run_template) in instances:
         wait_for_vailable(instance, success_status=u'running')
