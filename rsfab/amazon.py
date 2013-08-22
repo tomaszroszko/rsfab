@@ -2,7 +2,9 @@
     Helper functions to manage amazon cloud
 """
 import boto.ec2
+import boto.ec2.elb
 import boto.rds
+
 import time
 
 from fabric.api import env, run
@@ -10,6 +12,33 @@ from fabric.exceptions import NetworkError
 from fabric.context_managers import settings
 from fabric.colors import red, green, blue
 from fabric.utils import abort
+
+
+def add_instance_to_balancer(balancer_name, instance):
+    """
+        add instnace to be available in balancer
+    """
+    print(green('Register instance %s from balancer %s' % (
+        instance.id, balancer_name
+    )))
+    conn = get_elb_conn()
+    balancer = conn.get_all_load_balancers(
+        load_balancer_names=[balancer_name])[0]
+    balancer.register_instances([instance.id])
+
+
+def remove_instance_from_balancer(balancer_name, instance):
+    """
+        remove instance from balancer
+    """
+    print(green('Deregister instance %s from balancer %s' % (
+        instance.id, balancer_name
+    )))
+
+    conn = get_elb_conn()
+    balancer = conn.get_all_load_balancers(
+        load_balancer_names=[balancer_name])[0]
+    balancer.deregister_instances([instance.id])
 
 
 def wait_for_vailable(obj, success_status=u'available'):
@@ -66,6 +95,46 @@ def get_database():
     return db_instance
 
 
+def get_ec2_conn():
+    """
+        Requried: env.aws_region, env.aws_access_key, env.aws_secret_access_key
+        return conneciton to aws ec2
+    """
+    conn = boto.ec2.connect_to_region(
+        env.aws_region,
+        aws_access_key_id=env.aws_access_key,
+        aws_secret_access_key=env.aws_secret_access_key
+    )
+    if conn is None:
+        print(red("Can't connect to ec2 region"))
+    return conn
+
+
+def get_elb_conn():
+    """
+        Return conneciton to balancer
+    """
+    conn = boto.ec2.elb.ELBConnection(
+        env.aws_access_key, env.aws_secret_access_key)
+    if conn is None:
+        print(red("Can't connect to balancer"))
+    return conn
+
+
+def get_instances():
+    """
+        Required: env.aws_env_tag and env.aws_env
+        get list of instances for current environemnt
+    """
+    conn = get_ec2_conn()
+    reservations = conn.get_all_instances(
+        filters={'tag:%s' % env.aws_env_tag: env.aws_env})
+    instances = []
+    for r in reservations:
+        instances.extend(r.instances)
+    return instances
+
+
 def run_instances():
     """
         It's run instance from ami_id. Wait for creating all instances
@@ -89,14 +158,7 @@ def run_instances():
         ]
 
     """
-    conn = boto.ec2.connect_to_region(
-        env.aws_region,
-        aws_access_key_id=env.aws_access_key,
-        aws_secret_access_key=env.aws_secret_access_key
-    )
-    if conn is None:
-        print(red("Can't connect to ec2 region"))
-        return
+    conn = get_ec2_conn()
     instances = []
 
     for run_template in env.aws_run_templates:

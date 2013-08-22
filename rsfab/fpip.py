@@ -17,3 +17,13 @@ def install_requirements(use_sudo=False):
     with venv():
         with in_project():
             func("pip install -r requirements.txt")
+
+
+def install_lib(lib_name, use_sudo=False):
+    """
+        Install lib with given name
+    """
+    func = use_sudo and sudo or run
+    with venv():
+        with in_project():
+            func("pip install %s" % lib_name)
