@@ -11,12 +11,13 @@ from project import in_project
 from virtualenv import venv
 
 
-def install_requirements(use_sudo=False):
+def install_requirements(use_sudo=False, exists_action='i'):
     "Install the required packages from the requirements file using pip"
     func = use_sudo and sudo or run
     with venv():
         with in_project():
-            func("pip install -r requirements.txt")
+            func(
+                "pip install -r requirements.txt --exists-action=%s" % exists_action)
 
 
 def install_lib(lib_name, use_sudo=False):
