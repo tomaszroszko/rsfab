@@ -1,33 +1,30 @@
-import os
+#! /usr/bin/env python
 from setuptools import setup
+import sys
 
-README = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
-
-# allow setup.py to be run from any path
-os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
+reload(sys).setdefaultencoding('Utf-8')
 
 setup(
     name='rsfab',
-    version='0.2.1',
-    packages=['rsfab'],
-    include_package_data=True,
-    license='BSD License',
-    description='Helpers functions for fabric',
-    long_description=README,
-    url='https://github.com/tomaszroszko/rsfab',
+    version='2.1.0',
     author='Tomasz Roszko',
     author_email='tomaszroszko@gmail.com',
-    zip_safe=False,
+    description='Helper functions for fabric',
+    long_description=open('README.md').read(),
+    url='https://github.com/tomaszroszko/rsfab',
+    license='BSD License',
+    platforms=['OS Independent'],
+    packages=['rsfab'],
+    include_package_data=True,
     classifiers=[
+        'Development Status :: 2.1.0 - Production/Stable',
         'Environment :: Web Environment',
         'Framework :: Django',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2.6',
-        'Programming Language :: Python :: 2.7',
-        'Topic :: Internet :: WWW/HTTP',
-        'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
+        'Topic :: Software Development :: Libraries :: Python Modules',
+        'Topic :: Documentation',
     ],
 )
