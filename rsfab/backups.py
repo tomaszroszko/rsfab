@@ -46,6 +46,15 @@ def revert_backup(use_sudo=False):
         env.backup_dir, func('ls -1 %(backup_dir)s' % env).split()[1])
     finish_backup(use_sudo)
 
+@task
+def safe_copy(use_sudo=False):
+    """
+    Create safe copy of current project path to backup dir
+    """
+    func = use_sudo and sudo or run
+    env.project_backup = env.backup_dir + datetime.now().strftime(
+        '%Y%m%d_%H%M')
+    func('cp -R %(project_path)s %(project_backup)s' % env)
 
 def setup_backup(backup_dir):
     """

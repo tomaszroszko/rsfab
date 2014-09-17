@@ -57,4 +57,5 @@ def django_cleanpyc(use_sudo=False):
     """
         Run python manage.py cleanpyc
     """
-    django_manage('clean_pyc', use_sudo)
+    func = use_sudo and sudo or run
+    func("find . -name '*.pyc' -delete")
