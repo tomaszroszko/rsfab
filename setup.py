@@ -1,12 +1,12 @@
 #! /usr/bin/env python
-from setuptools import setup
+from distutils.core import setup
 import sys
 
 reload(sys).setdefaultencoding('Utf-8')
 
 setup(
     name='rsfab',
-    version='2.1.0',
+    version='2.1.1',
     author='Tomasz Roszko',
     author_email='tomaszroszko@gmail.com',
     description='Helper functions for fabric',
